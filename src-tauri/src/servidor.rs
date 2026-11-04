@@ -43,9 +43,44 @@ pub struct ConfigPublica {
     pub configurado: bool,
 }
 
+#[cfg(windows)]
 fn config_dir() -> PathBuf {
     let base = std::env::var("APPDATA").unwrap_or_else(|_| ".".into());
     PathBuf::from(base).join("enshrouded-save-editor")
+}
+
+#[cfg(target_os = "linux")]
+fn config_dir() -> PathBuf {
+    let home = PathBuf::from(
+        std::env::var_os("HOME").expect("HOME must be set")
+    );
+
+    let base = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())
+        .unwrap_or_else(|| home.join(".config"));
+
+    base.join("enshrouded-save-editor")
+}
+
+#[cfg(windows)]
+fn server_backup_root() -> PathBuf {
+    PathBuf::from(
+        std::env::var("USERPROFILE").unwrap_or_else(|_| ".".into())
+    )
+    .join("Documents")
+    .join("Enshrouded-Backups")
+    .join("servidor")
+}
+
+#[cfg(target_os = "linux")]
+fn server_backup_root() -> PathBuf {
+    PathBuf::from(
+        std::env::var_os("HOME").expect("HOME must be set")
+    )
+    .join("Documents")
+    .join("Enshrouded-Backups")
+    .join("servidor")
 }
 
 fn config_path() -> PathBuf {
@@ -179,8 +214,7 @@ pub async fn servidor_gravar(steamid: String, arquivo: String, data: Vec<u8>) ->
     }
     let caminho = remoto(&c, &[&steamid, &arquivo])?;
     let segs = std::time::SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    let dir = PathBuf::from(std::env::var("USERPROFILE").unwrap_or_else(|_| ".".into()))
-        .join("Documents").join("Enshrouded-Backups").join("servidor")
+    let dir = server_backup_root()
         .join(format!("{steamid}-{segs}"));
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     // backup do que está no servidor antes de sobrescrever
