@@ -1,0 +1,79 @@
+name: Check upstream updates
+
+on:
+  schedule:
+    # Daily at 07:23 UTC; avoids the top-of-hour Actions rush.
+    - cron: '23 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: check-upstream
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Linux branch
+        uses: actions/checkout@v4
+        with:
+          ref: linux-support
+          fetch-depth: 0
+
+      - name: Fetch upstream main
+        run: |
+          git remote add upstream https://github.com/nicolasferreiraxn/Enshrouded-Save-Editor.git
+          git fetch --no-tags upstream main
+
+      - name: Check for new upstream commits
+        id: changes
+        shell: bash
+        run: |
+          if git merge-base --is-ancestor FETCH_HEAD HEAD; then
+            echo "No new upstream commits to merge."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Upstream changes detected."
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update upstream snapshot branch
+        if: steps.changes.outputs.needed == 'true'
+        run: |
+          # This branch contains the unmodified upstream commit.
+          # Never force-push to main or linux-support.
+          git push --force origin FETCH_HEAD:refs/heads/upstream-sync
+
+      - name: Open synchronization pull request
+        if: steps.changes.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          existing="$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --base linux-support \
+            --head upstream-sync \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          if [[ -n "$existing" ]]; then
+            echo "Updated existing upstream PR #$existing."
+            exit 0
+          fi
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base linux-support \
+            --head upstream-sync \
+            --title "Sync changes from Nicolas's upstream main" \
+            --body "This PR was created automatically after detecting new commits in nicolasferreiraxn/Enshrouded-Save-Editor:main.
+
+          Review the upstream changes and confirm that Linux-specific adaptations are preserved. Merge manually after testing.
+
+          This workflow never updates main or linux-support directly. To keep the fork's main branch mirrored, use GitHub's Sync fork control on main separately."
