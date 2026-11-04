@@ -38,9 +38,22 @@ fn is_save(path: &str) -> Result<PathBuf, String> {
     }
 }
 
+#[cfg(windows)]
 fn backup_root() -> PathBuf {
-    let home = std::env::var("USERPROFILE").unwrap_or_else(|_| ".".into());
-    Path::new(&home).join("Documents").join("Enshrouded-Backups").join("editor")
+    let home = std::env::var("USERPROFILE")
+        .unwrap_or_else(|_| ".".into());
+    Path::new(&home).join("Documents")
+        .join("Enshrouded-Backups").join("editor")
+}
+
+#[cfg(target_os = "linux")]
+fn backup_root() -> PathBuf {
+    let home = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .expect("HOME must be set for backups");
+
+    home.join("Documents")
+        .join("Enshrouded-Backups").join("editor")
 }
 
 #[derive(Serialize)]
@@ -48,20 +61,53 @@ struct SaveFile { path: String, file: String, modified: f64 }
 
 #[tauri::command]
 fn list_saves() -> Vec<SaveFile> {
-    let mut out = vec![];
-    for root in ["C:/Program Files (x86)/Steam/userdata", "C:/Program Files/Steam/userdata"] {
+    let mut out = Vec::new();
+    let mut roots = Vec::<PathBuf>::new();
+
+    #[cfg(windows)]
+    {
+        roots.push(PathBuf::from("C:/Program Files (x86)/Steam/userdata"));
+        roots.push(PathBuf::from("C:/Program Files/Steam/userdata"));
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(home) = std::env::var_os("HOME") {
+            let home = PathBuf::from(home);
+            roots.push(home.join(".local/share/Steam/userdata"));
+            roots.push(home.join(".steam/steam/userdata"));
+        }
+    }
+
+    for root in roots {
         let Ok(users) = fs::read_dir(root) else { continue };
-        for u in users.flatten() {
-            let dir = u.path().join("1203620").join("remote");
-            let Ok(files) = fs::read_dir(&dir) else { continue };
-            for f in files.flatten() {
-                let name = f.file_name().to_string_lossy().to_string();
-                if name.starts_with("character") && name.ends_with(".ksd") && name[9..name.len() - 4].chars().all(|c| c.is_ascii_digit()) {
-                    out.push(SaveFile { path: f.path().to_string_lossy().to_string(), file: name, modified: modified_ms(&f.path()) });
+
+        for user in users.flatten() {
+            let dir = user.path().join("1203620").join("remote");
+            let Ok(files) = fs::read_dir(dir) else { continue };
+
+            for file in files.flatten() {
+                let name = file.file_name().to_string_lossy().to_string();
+
+                let valid = name
+                    .strip_prefix("character")
+                    .and_then(|s| s.strip_suffix(".ksd"))
+                    .is_some_and(|s| !s.is_empty() && s.chars().all(|c| c.is_ascii_digit()));
+
+                if valid {
+                    out.push(SaveFile {
+                        path: file.path().to_string_lossy().to_string(),
+                        file: name,
+                        modified: modified_ms(&file.path()),
+                    });
                 }
             }
         }
     }
+
+    out.sort_by(|a, b| b.modified.total_cmp(&a.modified));
+    out.dedup_by(|a, b| a.path == b.path);
+
     out
 }
 
@@ -87,6 +133,7 @@ fn zstd_compress(data: Vec<u8>) -> Result<Response, String> {
     zstd::bulk::compress(&data, 19).map(Response::new).map_err(|e| e.to_string())
 }
 
+#[cfg(windows)]
 #[tauri::command]
 fn game_running() -> bool {
     let mut cmd = Command::new("tasklist");
@@ -94,6 +141,35 @@ fn game_running() -> bool {
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
     cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_lowercase().contains("enshrouded.exe")).unwrap_or(false)
+}
+
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn game_running() -> bool {
+    let Ok(entries) = fs::read_dir("/proc") else {
+        // Fail closed if process inspection is unavailable.
+        return true;
+    };
+
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+
+        if !name.bytes().all(|b| b.is_ascii_digit()) {
+            continue;
+        }
+
+        let comm = entry.path().join("comm");
+
+        if let Ok(process_name) = fs::read_to_string(comm) {
+            if process_name.trim().eq_ignore_ascii_case("enshrouded.exe") {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 fn copy_dir(src: &Path, dst: &Path) -> std::io::Result<()> {
@@ -183,11 +259,25 @@ fn restore_backup(src: String, target: String) -> Result<(), String> {
     fs::write(t, data).map_err(|e| e.to_string())
 }
 
+#[cfg(windows)]
 #[tauri::command]
 fn open_backups() {
     let r = backups_home();
     let _ = fs::create_dir_all(&r);
     let _ = Command::new("explorer").arg(r).spawn();
+}
+
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+fn open_backups() {
+    let dir = backups_home();
+
+    if fs::create_dir_all(&dir).is_ok() {
+        let _ = Command::new("xdg-open")
+            .arg(dir)
+            .spawn();
+    }
 }
 
 // Opens the editor's releases page in the default browser (the update card's "see what's new"). The URL is
