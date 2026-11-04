@@ -192,15 +192,44 @@ fn open_backups() {
 
 // Opens the editor's releases page in the default browser (the update card's "see what's new"). The URL is
 // fixed: nothing from the page or the network decides what gets opened.
+#[cfg(windows)]
 #[tauri::command]
 fn open_releases() {
     #[link(name = "shell32")]
     extern "system" {
-        fn ShellExecuteW(hwnd: isize, op: *const u16, file: *const u16, params: *const u16, dir: *const u16, show: i32) -> isize;
+        fn ShellExecuteW(
+            hwnd: isize,
+            op: *const u16,
+            file: *const u16,
+            params: *const u16,
+            dir: *const u16,
+            show: i32,
+        ) -> isize;
     }
+
     let w = |s: &str| s.encode_utf16().chain([0]).collect::<Vec<u16>>();
     let url = "https://github.com/nicolasferreiraxn/Enshrouded-Save-Editor/releases/latest";
-    unsafe { ShellExecuteW(0, w("open").as_ptr(), w(url).as_ptr(), std::ptr::null(), std::ptr::null(), 1) };
+
+    unsafe {
+        ShellExecuteW(
+            0,
+            w("open").as_ptr(),
+            w(url).as_ptr(),
+            std::ptr::null(),
+            std::ptr::null(),
+            1,
+        );
+    }
+}
+
+#[cfg(not(windows))]
+#[tauri::command]
+fn open_releases() {
+    let url = "https://github.com/bisdat/Enshrouded-Save-Editor/releases";
+
+    let _ = Command::new("xdg-open")
+        .arg(url)
+        .spawn();
 }
 
 fn mime(path: &str) -> &'static str {
