@@ -7,8 +7,7 @@ name: build
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
+    branches: [main, linux-support]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -55,20 +54,3 @@ jobs:
           name: enshrouded-save-editor
           path: src-tauri/target/release/enshrouded-save-editor.exe
           if-no-files-found: error
-
-      - name: Publicar release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: src-tauri/target/release/enshrouded-save-editor.exe
-          generate_release_notes: true
-          body: |
-            Baixe o `enshrouded-save-editor.exe` e rode. Não precisa instalar nada: os recursos da
-            interface vão dentro do executável.
-
-            Para editar as cópias de personagem de um servidor dedicado, é preciso o
-            [Enshrouded Server Guardian](https://github.com/nicolasferreiraxn/Enshrouded-Server-Guardian)
-            rodando nele. Sem o guardião, o editor trabalha nos saves locais do seu jogo.
-
-            Este arquivo foi compilado pelo GitHub Actions a partir deste repositório — o log do
-            build é público e pode ser conferido na aba Actions.

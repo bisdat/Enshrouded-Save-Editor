@@ -1,0 +1,160 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Windows executable
+        run: npx tauri build --no-bundle
+
+      - name: Prepare Windows package
+        shell: pwsh
+        run: |
+          $source = "src-tauri/target/release/enshrouded-save-editor.exe"
+          if (-not (Test-Path $source)) {
+            throw "Windows executable missing"
+          }
+          if ((Get-Item $source).Length -lt 5000000) {
+            throw "Windows executable unexpectedly small"
+          }
+          New-Item -ItemType Directory -Force release-output | Out-Null
+          Copy-Item $source release-output/enshrouded-save-editor-windows-x64.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: release-output/*.exe
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl wget file \
+            libxdo-dev \
+            libssl-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            patchelf
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Linux AppImage
+        run: |
+          npx tauri build \
+            --bundles appimage \
+            --config src-tauri/tauri.linux.conf.json
+
+      - name: Prepare Linux package
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(src-tauri/target/release/bundle/appimage/*.AppImage)
+
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "Expected exactly one AppImage, found ${#files[@]}"
+            exit 1
+          fi
+
+          mkdir -p release-output
+          cp "${files[0]}" \
+            release-output/enshrouded-save-editor-linux-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: release-output/*.AppImage
+          if-no-files-found: error
+
+  publish:
+    needs: [windows, linux]
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Windows package
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: release-assets
+
+      - name: Download Linux package
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-release
+          path: release-assets
+
+      - name: Verify release packages
+        run: |
+          ls -lh release-assets/
+          test -s release-assets/enshrouded-save-editor-windows-x64.exe
+          test -s release-assets/enshrouded-save-editor-linux-x86_64.AppImage
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            release-assets/enshrouded-save-editor-windows-x64.exe
+            release-assets/enshrouded-save-editor-linux-x86_64.AppImage
+          fail_on_unmatched_files: true
+          generate_release_notes: true
