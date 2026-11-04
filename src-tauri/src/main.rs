@@ -199,11 +199,31 @@ fn backup_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn write_save(path: String, data: Vec<u8>) -> Result<(), String> {
-    if game_running() { return Err("Feche o Enshrouded antes de salvar.".into()); }
+fn write_save(path: String, data: Vec<u8>) -> Result<String, String> {
+    // Never overwrite an active game save.
+    if game_running() {
+        return Err("Feche o Enshrouded antes de salvar.".into());
+    }
+
     let p = is_save(&path)?;
-    if data.len() < 0x30 || &data[..4] != b"SV2C" { return Err("Dados inválidos".into()); }
-    fs::write(p, data).map_err(|e| e.to_string())
+
+    if data.len() < 0x30 || &data[..4] != b"SV2C" {
+        return Err("Dados inválidos".into());
+    }
+
+    // Backup is mandatory. Any backup failure aborts the write.
+    let backup = make_backup(&p)?;
+
+    // Recheck the game after creating the backup.
+    if game_running() {
+        return Err("Enshrouded iniciou durante o backup. Salvamento cancelado.".into());
+    }
+
+    fs::write(&p, data).map_err(|e| {
+        format!("Backup criado, mas não foi possível gravar o save: {e}")
+    })?;
+
+    Ok(backup.to_string_lossy().into_owned())
 }
 
 #[derive(Serialize)]

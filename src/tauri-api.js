@@ -378,8 +378,10 @@ export default {
     });
     const data = await sv2c.build({ header: s.save.header, blocks }, compress);
     await sv2c.parse(data, decompress, []); // valida hashes e estrutura
-    const backupDir = await invoke('backup_file', { path });
-    await invoke('write_save', { path, data: Array.from(data) });
+    const backupDir = await invoke('write_save', {
+      path,
+      data: Array.from(data),
+    });
     const fresh = await load(path);
     sessions.set(path, fresh);
     const { modified } = await invoke('file_info', { path });
