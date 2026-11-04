@@ -36,9 +36,10 @@
 | 💎 **Qualquer item em detalhe** | nível, quantidade, durabilidade, melhorias, raridade e **a joia encaixada na arma** (trocar, tirar, mudar o nível) |
 | ⚔️ **O que o item faz** | as linhas de atributo e as melhorias por nível, lidas dos recursos do próprio jogo e mostradas como o jogo mostra |
 | 📜 **Conhecimento** | descobertas e receitas, com busca por nome ou id e filtro por nível |
+| 🗺️ **Névoa de guerra** | pinte o que o personagem já explorou sobre o mapa-múndi: revele ou esconda com um pincel, ou o mapa todo de uma vez, com desfazer — só em saves locais (veja abaixo) |
 | 🏰 **Servidor dedicado** | com o [Enshrouded Server Guardian](https://github.com/nicolasferreiraxn/Enshrouded-Server-Guardian), as cópias de personagem do servidor aparecem na mesma lista — edite, expulse o jogador, e ele volta com a sua versão |
 | 💾 **Backup sempre** | backup antes de cada gravação, restaurável de dentro do aplicativo |
-| 🌍 **Português e inglês** | troca na barra de baixo; acrescentar um idioma é um arquivo JSON |
+| 🌍 **Cinco idiomas** | português, inglês, espanhol, alemão e chinês simplificado, com os nomes oficiais de itens e habilidades do jogo; acrescentar um idioma é um arquivo JSON |
 
 Todo item novo nasce com os campos extras que aquele tipo de item realmente guarda, medidos em saves reais — por
 isso o que você cria no editor funciona no jogo.
@@ -60,6 +61,11 @@ isso o que você cria no editor funciona no jogo.
 1. Edite a cópia de um jogador e salve.
 2. Expulse o jogador (ou peça para ele relogar).
 3. Na entrada seguinte o guardião impõe a cópia guardada — ele volta com a sua versão.
+
+> **A névoa de guerra não pode ser editada pelo servidor.** É uma limitação do jogo, não do editor: a névoa fica só no
+> save de cada jogador, no computador dele. O jogo nunca a manda para o servidor e o servidor nunca a guarda
+> (conferimos o que o jogador envia ao entrar e todos os blocos do save do mundo), então não há nada no servidor para
+> ler ou mudar. Cada jogador edita a própria névoa abrindo o save local, com o jogo fechado.
 
 O editor também lê a pasta `recusados/` do guardião e explica, em palavras, o que um save recusado trazia:
 diferença de nível e xp, itens a mais ou a menos, itens que só trocaram de lugar e descobertas que divergem.
@@ -103,24 +109,27 @@ vez de ser aceita em silêncio.
 
 ## 🌍 Traduzindo
 
-A interface vem em português e inglês. Acrescentar um idioma é um arquivo, e a chave da tradução **é o próprio
-texto em português** — então o que faltar traduzir aparece em português, e nada quebra.
+A interface vem em português, inglês, espanhol, alemão e chinês simplificado. Acrescentar um idioma é um arquivo,
+e a chave da tradução **é o próprio texto em português** — o que faltar traduzir aparece em inglês (e, sem inglês,
+em português), e nada quebra.
 
-1. Copie `src/i18n/en.json` para `src/i18n/<código>.json` (`es.json`, `de.json`…).
+1. Copie `src/i18n/en.json` para `src/i18n/<código>.json` (`fr.json`, `it.json`…).
 2. Traduza os **valores**, sem mexer nas chaves, e mantenha os `{marcadores}` (podem mudar de lugar na frase).
 3. Registre em `IDIOMAS`, no começo de [`src/i18n.js`](src/i18n.js):
 
 ```js
-import es from './i18n/es.json';
+import fr from './i18n/fr.json';
 
 export const IDIOMAS = [
-  { codigo: 'pt-BR', nome: 'Português', locale: 'pt-BR', dicionario: null },
-  { codigo: 'en', nome: 'English', locale: 'en-US', dicionario: en },
-  { codigo: 'es', nome: 'Español', locale: 'es-ES', dicionario: es },
+  // …os idiomas que já estão lá…
+  { codigo: 'fr', nome: 'Français', locale: 'fr-FR', dicionario: fr },
 ];
 ```
 
-Nomes de item e de habilidade vêm da localização do próprio jogo (`data/items.json`, em português e inglês).
+Nomes de item e de habilidade vêm da localização do próprio jogo: `data/items.json` e `data/skills.json` os trazem em
+português, inglês, espanhol, alemão e chinês simplificado, tirados do texto oficial do jogo e renovados pelo
+mantenedor depois das atualizações do jogo. Um idioma novo também precisa do seu campo em `campoDeNome()`
+(`src/i18n.js`); sem ele, os nomes aparecem em inglês.
 
 ## 🛠️ Compilando
 
@@ -179,8 +188,7 @@ atualização que mude ids ou nomes, os dados ficam velhos até alguém regerar.
 
 ## ❤️ Créditos
 
-- **[kfc-parser / Enshrouded Mod Loader](https://github.com/Brabb3l/kfc-parser)**, do brabb3l — usado para ler os
-  recursos do jogo.
+- **[kfc-parser / Enshrouded Mod Loader](https://github.com/Brabb3l/kfc-parser)**, do brabb3l — usado para ler os recursos do jogo.
 - **Keen Games** — pelo Enshrouded.
 
 ---

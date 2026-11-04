@@ -1,19 +1,3 @@
-// Interpreta um bloco de personagem e o remonta, exigindo que o resultado seja byte a byte igual
-// ao original. É o que garante que editar um campo não reescreve nada por acidente.
-//
-// uso: node tests/ida-e-volta.mjs [pasta ou arquivo]...
-//
-// Roda em dois modos, e o primeiro é sempre executado:
-//
-// 1. Caso sintético. Monta um bloco com todas as combinações de campos extras que uma entrada de
-//    item pode ter, interpreta, remonta e compara. Confere o leitor contra o escritor, que é onde
-//    quase todo erro aparece: um campo lido na ordem errada, ou escrito com tamanho diferente.
-//    Não substitui o save real — se leitor e escritor estiverem ambos errados sobre o formato do
-//    jogo, este caso passa. É o que dá para rodar na integração contínua, onde não existe save de
-//    ninguém.
-//
-// 2. Saves reais, se alguma pasta for passada. Procura `A.bin` (as cópias que o Enshrouded Server
-//    Guardian guarda) e exige que cada um remonte idêntico. É este que prova o formato.
 import fs from 'node:fs';
 import path from 'node:path';
 import { Buffer } from 'node:buffer';
@@ -24,7 +8,7 @@ const { parseCharacter, buildCharacter } = await import(pathToFileURL(path.join(
 const items = JSON.parse(fs.readFileSync(path.join(RAIZ, 'data', 'items.json'), 'utf8'));
 const skills = JSON.parse(fs.readFileSync(path.join(RAIZ, 'data', 'skills.json'), 'utf8'));
 
-const CAB = 14; // cabeçalho S2BH de um bloco
+const CAB = 14;
 const isItem = (id) => Object.prototype.hasOwnProperty.call(items, id);
 const isSkill = (id) => Object.prototype.hasOwnProperty.call(skills.nodes, id);
 const ESPACOS = new Set(['Armour_Head', 'Armour_UpperBody', 'Armour_Arms', 'Armour_LowerBody',
@@ -38,9 +22,6 @@ const conferir = (certo, descricao) => {
   console.log(`${certo ? 'ok  ' : 'ERRO'} ${descricao}`);
 };
 
-// ----------------------------------------------------------------- caso sintético
-
-/** Monta o objeto de personagem que o escritor espera, com variedade de campos extras. */
 function personagemSintetico() {
   const equipaveis = Object.keys(items).filter((id) => ehEquipavel(id)).slice(0, 6).map(Number);
   const quaisquer = Object.keys(items).slice(0, 9).map(Number);
@@ -49,14 +30,13 @@ function personagemSintetico() {
     throw new Error('data/items.json ou data/skills.json pequenos demais para montar o caso');
   }
 
-  // uma entrada por combinação de campos que importa: cada bit de flag presente e ausente
   const variacoes = [
-    {},                                                                    // flags 0x00
-    { level: 1 },                                                          // 0x01
-    { level: 40, durability: 1200, maxDurability: 1600 },                  // 0x03
-    { level: 55, appearance: 'deadbeef', maxUpgrades: 5, upgrades: 5 },    // 0x19
-    { liquid: 3, maxLiquid: 10 },                                          // 0x04
-    { level: 90, durability: 10, maxDurability: 1600, appearance: '01020304', maxUpgrades: 4, upgrades: 2, socket: 'c2b4bcda69' }, // 0x3b
+    {},
+    { level: 1 },
+    { level: 40, durability: 1200, maxDurability: 1600 },
+    { level: 55, appearance: 'deadbeef', maxUpgrades: 5, upgrades: 5 },
+    { liquid: 3, maxLiquid: 10 },
+    { level: 90, durability: 10, maxDurability: 1600, appearance: '01020304', maxUpgrades: 4, upgrades: 2, socket: 'c2b4bcda69' },
   ];
 
   const equipment = equipaveis.map((itemId, i) => ({
@@ -69,9 +49,8 @@ function personagemSintetico() {
     slot: i, itemId, count: 99, flags: 0, ...variacoes[(i + 4) % variacoes.length],
   }));
 
-  // Máscara com 2 bits acesos a mais que a lista (as armas ficam fora dela), como nos saves medidos.
-  const mask = 0xff; // 8 bits para 6 peças
-  const free = 1;    // os bytes 01 00 não podem ser confundidos com o 05 do inventário
+  const mask = 0xff;
+  const free = 1;
 
   return {
     level: 35,
@@ -84,11 +63,8 @@ function personagemSintetico() {
     _equipMask: mask,
     _equipFree: free,
     _raw: {
-      // 0x3a bytes de aparência, preservados como estão
       head: Buffer.alloc(0x3a, 0xa7),
-      // os 4 últimos bytes do trecho do meio são a máscara; aqui o trecho é só ela
       mid: (() => { const b = Buffer.alloc(4); b.writeUInt32LE(mask, 0); return b; })(),
-      // [livres u16][05][qtd principal][grupos][qtd extra]
       between: Buffer.from([free & 0xff, free >> 8, 0x05, main.length, 0x04, extra.length]),
       tail: Buffer.alloc(16, 0x5c),
     },
@@ -111,7 +87,6 @@ function casoSintetico() {
   conferir(Buffer.compare(refeito, original) === 0,
     `sintético: remontou idêntico (${original.length} bytes)`);
 
-  // os campos tinham de voltar com o mesmo valor, não só o mesmo tamanho
   conferir(lido.level === dentro.level && lido.xp === dentro.xp,
     `sintético: nível ${lido.level} e xp ${lido.xp}`);
   conferir(JSON.stringify(lido.skills) === JSON.stringify(dentro.skills),
@@ -125,8 +100,6 @@ function casoSintetico() {
       conferir(false, `sintético: ${nome} veio com ${veio.length} entradas, esperava ${esperado.length}`);
       continue;
     }
-    // o campo flags é recalculado pelo escritor a partir dos campos presentes, então comparamos
-    // tudo menos ele — é justamente o que o leitor tem de reconstruir sozinho
     const semFlags = (e) => { const { flags, ...r } = e; return JSON.stringify(Object.entries(r).sort()); };
     const difere = veio.findIndex((e, i) => semFlags(e) !== semFlags(esperado[i]));
     conferir(difere === -1, difere === -1
@@ -134,7 +107,6 @@ function casoSintetico() {
       : `sintético: ${nome}[${difere}] voltou diferente: ${JSON.stringify(veio[difere])}`);
   }
 
-  // e o bloco tem de sobreviver a uma edição: tirar uma peça acerta máscara e espaços livres
   const tirandoUma = { ...lido, equipment: lido.equipment.slice(0, -1).map((e, i) => ({ ...e, slot: i })) };
   try {
     const menor = buildCharacter(tirandoUma);
@@ -149,8 +121,6 @@ function casoSintetico() {
 }
 
 casoSintetico();
-
-// ----------------------------------------------------------------- saves reais
 
 function* acha(alvo, profundidade = 0) {
   let st;

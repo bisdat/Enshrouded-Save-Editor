@@ -1,0 +1,14 @@
+/* Readability floor and keyboard focus for the stage screens.
+   Sizes are stage px (2560x1440): 22 is about 16 css px at the default 1920x1080 window. */
+:focus-visible { outline: 3px solid #EDD38A; outline-offset: 3px; }
+.gbtn:focus-visible { outline-offset: 0; }
+.viewport .hint, .viewport .bag-tools .hint, .viewport .status, .viewport .know-estado, .viewport .jog-reg-row, .viewport .bk-label, .viewport .bk-kind, .viewport .pip-label, .viewport .cat-count, .viewport .chip-count, .viewport .st-nivel, .viewport .st-ganho { font-size: max(24px, 1em * .8) !important; }
+.viewport .hint { font-size: 25px !important; line-height: 1.4; }
+.viewport .bag-tools .hint { font-size: 23px !important; }
+.viewport .debug { font: 20px 'Segoe UI', sans-serif !important; color: rgba(236,230,214,.62) !important; user-select: text; }
+.viewport .key { min-width: 34px; height: 32px; font-size: 20px; }
+.viewport .srv-tag { font-size: 19px; }
+.viewport .caps.small, .viewport .small { font-size: 25px; }
+.viewport .hint, .viewport .status, .viewport .debug, .viewport .bk-label, .viewport .jog-card span, .viewport .jog-motivo, .viewport .detail-sub, .viewport .know-nome { user-select: text; }
+.viewport .gbtn.off { opacity: .55; filter: grayscale(.6); }
+.viewport .hint-btn.off { opacity: .55; }

@@ -2,18 +2,17 @@
 import React from 'react';
 import { items, itemName, CATEGORY_PT } from './gamedata.js';
 import { ui, tex, ttex, itemIcon, rgba, rarityOf, rarityColor } from './ui.js';
-import { GameButton, Stepper, RarityGems, UpgradePips, MeterBar, Separator, tierOf } from './components.jsx';
+import { GameButton, Stepper, RarityGems, UpgradePips, MeterBar, tierOf } from './components.jsx';
 import { t, localeAtual } from './i18n.js';
 import ItemStats from './ItemStats.jsx';
+import MolduraSVG from './MolduraSVG.jsx';
 
+// the panel is drawn in SVG (MolduraSVG) instead of the game's raster textures
 export function FancyPanel({ children, style }) {
   return (
-    <div className="detail" style={style}>
-      <img className="detail-bg" src={ttex('panel_bg')} alt="" />
-      <div className="detail-pattern" style={{ backgroundImage: `url(${tex(ui.menu.fancyBox.backgroundPattern)})` }} />
-      <img className="detail-frame" src={tex(ui.menu.fancyBox.frameFull)} alt="" />
+    <MolduraSVG className="detail" style={style}>
       <div className="detail-body">{children}</div>
-    </div>
+    </MolduraSVG>
   );
 }
 
@@ -147,7 +146,6 @@ export default function ItemEditor({ entry, onChange, onRemove, onDuplicate, cap
       <ItemStats entry={entry} />
 
       <div className="ed-actions">
-        <Separator />
         <div className="row-gap">
           {onDuplicate && <GameButton onClick={onDuplicate} title={t('Copia o item para o primeiro espaço livre')}>{t('Duplicar')}</GameButton>}
           {onRemove && <GameButton danger onClick={onRemove} title="Delete">{t('Remover')}</GameButton>}

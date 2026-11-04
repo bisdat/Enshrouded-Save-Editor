@@ -2,6 +2,56 @@
 
 *Read this in [English](CHANGELOG.md).*
 
+## 1.1.0 — 04/11/2026
+
+### Um visual novo, feito para continuar legível
+
+- **Moldura nova:** barra lateral com o seu personagem e as seções (teclas 1–6), barra de ferramentas com
+  Desfazer/Refazer, as alterações pendentes e Salvar, e uma barra de status. As texturas, os ícones de itens e as
+  fontes do jogo continuam os mesmos.
+- **As telas de Personagem e Servidor são responsivas:** se reorganizam com a janela, com margens confortáveis e
+  textos que nunca ficam pequenos ou grandes demais. O equipamento virou uma tabela (armadura e visual lado a lado),
+  então os rótulos não se sobrepõem mais.
+- **O painel do item é desenhado em vetor (SVG),** nítido em qualquer tamanho; listas longas de atributos rolam
+  dentro dele, e as ações ficam sempre à vista.
+
+### Suas edições estão seguras
+
+- **Desfazer e Refazer em toda edição,** com uma descrição legível ("Nível 48 → 50"); a lista de alterações
+  pendentes deixa desfazer até qualquer ponto.
+- A tecla **Z** sozinha não apaga mais todas as edições.
+- **Salvar pede confirmação** e lista o que vai mudar. Gravar na cópia de um jogador no servidor só acontece depois
+  de você confirmar que ele está fora ou foi expulso.
+- Trocar de personagem com edições não salvas pergunta antes: salvar, ou descartar e trocar.
+
+### Névoa de guerra
+
+- **Nova aba Névoa** para saves locais: pinte o que o seu personagem já explorou sobre o mapa-múndi, com pincel de
+  revelar/esconder, tamanho ajustável, revelar/esconder tudo e desfazer. O pincel é adaptado de outro editor de saves
+  do Enshrouded o mapa é a visão geral renderizada pelo nosso Mapa Interativo.
+- A névoa não pode ser editada pelo servidor — limitação do jogo: ela fica só no save de cada jogador e nunca é
+  enviada ao servidor.
+
+### Servidor
+
+- **Aba Log do guardião:** leia o que o Server Guardian escreve no servidor, inclusive em hosts cujo painel não
+  mostra isso (BisectHosting); filtro para avisos e erros.
+- **Estado do guardião:** a versão que roda no servidor e se ele está vivo ("rodando, visto há 1 min").
+- O modo observar do guardião é reconhecido nas duas grafias (`"modo": "observar"` e `"mode": "observe"`).
+
+### Idiomas
+
+- **Cinco idiomas:** Português, English, Español, Deutsch e 简体中文. Os nomes de itens e habilidades (e as descrições
+  das habilidades) usam o texto oficial do jogo em todos; a busca do catálogo acha itens por qualquer um dos nomes.
+- Um idioma de sistema desconhecido agora começa em inglês, e não em português.
+- Os termos seguem o jogo: Legendário, Arpéu, Armor, Upper Body e Lower Body.
+- A barra de status acompanha a troca de idioma, e rótulos longos (alemão) não invadem mais a barra de ações.
+
+### Aviso de versão nova
+
+- Um cartão na barra lateral avisa quando sai um editor mais novo, com um botão para a página de download. Nunca
+  baixa nada.
+
 ## 1.0.2 — 25/10/2026
 
 - **Os ícones da árvore de habilidades voltaram.** A 1.0.1 saiu com um `data/skills.json` regerado

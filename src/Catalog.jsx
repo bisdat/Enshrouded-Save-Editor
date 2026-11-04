@@ -24,9 +24,9 @@ export const CATEGORIES = [
 ];
 const ALL = Object.entries(items)
   .filter(([, it]) => !['Customization', 'ColorPalette'].includes(it.category) && (it.pt || it.en))
-  .map(([id, it]) => ({ id: Number(id), ...it, r: BASE_RARITY[it.rarity] || 1, tier: tierOf(Number(id)), q: `${it.pt || ''} ${it.en || ''} ${it.debug}`.toLowerCase() }));
+  .map(([id, it]) => ({ id: Number(id), ...it, r: BASE_RARITY[it.rarity] || 1, tier: tierOf(Number(id)), q: [it.pt, it.en, it.es, it.de, it.zh, it.debug].filter(Boolean).join(' ').toLowerCase() }));
 // Sem ordenar aqui: a ordem alfabética depende do idioma e isto roda uma vez só, na importação.
-// `q` junta os dois idiomas de propósito, para a busca achar o item escrevendo em qualquer um.
+// `q` joins the official name in every language on purpose, so the search finds the item in any of them.
 const LIMIT = 280;
 
 export default function Catalog({ target, onAdd, onClose, nivel }) {
@@ -69,7 +69,7 @@ export default function Catalog({ target, onAdd, onClose, nivel }) {
         </div>
         <div className="cat-main">
           <div className="cat-top">
-            <input ref={search} className="g-input cat-search" placeholder={t('Buscar por nome (português ou inglês)…')} value={q} onChange={(e) => setQ(e.target.value)} />
+            <input ref={search} className="g-input cat-search" placeholder={t('Buscar por nome (em qualquer idioma)…')} value={q} onChange={(e) => setQ(e.target.value)} />
             <div className="chips">
               <button className={`chip ${rar === 0 ? 'on' : ''}`} onClick={() => setRar(0)}>{t('Todas')}</button>
               {[1, 2, 3, 4, 5].map((r) => (
@@ -104,10 +104,11 @@ export default function Catalog({ target, onAdd, onClose, nivel }) {
               <div className="detail-sub" style={{ textAlign: 'center' }}>
                 {t(CATEGORY_PT[pick.category] || pick.category)}{pick.tier ? ` · ${t('Tier {n}', { n: pick.tier })}` : ''} · {t(RARITY_PT[pick.r])}
               </div>
-              {/* o nome no outro idioma, que ajuda a casar com guias e vídeos escritos nele */}
-              {pick.en && pick.pt && (
-                <div className="hint" style={{ textAlign: 'center' }}>{campoDeNome() === 'pt' ? pick.en : pick.pt}</div>
-              )}
+              {/* second name to match guides and videos: English (most guides), or Portuguese when the UI is English */}
+              {(() => {
+                const outro = campoDeNome() === 'en' ? pick.pt : pick.en;
+                return outro && outro !== itemName(pick.id) ? <div className="hint" style={{ textAlign: 'center' }}>{outro}</div> : null;
+              })()}
               {pick.maxStack > 1 && (
                 <div className="ed-row"><div className="ed-label">{t('Quantidade')}</div>
                   <div className="ed-ctrl"><Stepper value={qty} min={1} max={pick.maxStack} steps={[1, 10]} onChange={setQty} /></div></div>

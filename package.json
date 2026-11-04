@@ -1,13 +1,13 @@
 {
   "name": "enshrouded-save-editor",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Editor de save do Enshrouded, com suporte às cópias do Enshrouded Server Guardian.",
   "main": "electron/main.cjs",
   "private": true,
   "scripts": {
     "dev": "tauri dev",
     "build": "vite build",
-    "test": "node tests/dados-completos.mjs && node tests/soquete.mjs && node tests/itens-novos.mjs && node tests/nomes-por-idioma.mjs && node tests/estatisticas.mjs && node tests/todas-as-armas.mjs && node tests/ida-e-volta.mjs",
+    "test": "node tests/dados-completos.mjs && node tests/soquete.mjs && node tests/itens-novos.mjs && node tests/nomes-por-idioma.mjs && node tests/estatisticas.mjs && node tests/todas-as-armas.mjs && node tests/ida-e-volta.mjs && node tests/nevoa.mjs",
     "dist": "tauri build --no-bundle"
   },
   "dependencies": {

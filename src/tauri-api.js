@@ -45,6 +45,26 @@ async function load(path) {
   return { save, character, knowledge, error };
 }
 
+// Fog of war ("fogofwar" block): 13-byte header (size, 0, "FGOW", version) followed by a 1280x1280 grid,
+// one byte per map cell from 0 (never seen) to 255 (explored), row 0 at the north edge. It is ~1.6 MB, so it
+// stays out of the model (the app compares models with JSON.stringify on every render): it's read on demand,
+// edited in the session and written back only when it changed.
+export const FOG_N = 1280;
+const FOG_HEADER = 13;
+
+async function fogPayload(s) {
+  if (s.fogOriginal !== undefined) return s.fogOriginal;
+  const b = s.save.blocks.find((x) => x.name === 'fogofwar');
+  let p = null;
+  if (b) {
+    p = b.payload ?? (b.compressed ? await decompress(b.raw.subarray(14)) : new Uint8Array(b.raw.subarray(14)));
+    const magic = String.fromCharCode(p[8], p[9], p[10], p[11]);
+    if (p.length !== FOG_HEADER + FOG_N * FOG_N || magic !== 'FGOW') p = null;
+  }
+  s.fogOriginal = p;
+  return p;
+}
+
 function publicModel(path, modified, s) {
   const c = s.character;
   return {
@@ -216,6 +236,9 @@ export default {
   serverMode: () => invoke('servidor_modo'),
   serverHostKey: () => invoke('servidor_hostkey'),
   serverLog: () => invoke('servidor_registro'),
+  // the guardian's console log (guardiao.log, tail) and its heartbeat (ativo.json, null if missing)
+  serverGuardianLog: () => invoke('servidor_log_guardiao'),
+  serverGuardianStatus: () => invoke('servidor_ativo').then((s) => JSON.parse(s)).catch(() => null),
   serverNames: (atualizar = false) => invoke('servidor_nomes', { atualizar }),
   // Por que o guardião recusou UMA entrada. Compara o save que o cliente mandou (guardado em
   // recusados/) com a cópia que o servidor tem. O ponto onde o personagem termina e o
@@ -350,6 +373,7 @@ export default {
     const blocks = s.save.blocks.map((b) => {
       if (b.name === 'player_character') return { ...b, payload, changed: true };
       if (b.name === 'player_knowledge' && pk) return { ...b, payload: pk, changed: true };
+      if (b.name === 'fogofwar' && s.fogEdit) return { ...b, payload: Buffer.from(s.fogEdit), changed: true };
       return b;
     });
     const data = await sv2c.build({ header: s.save.header, blocks }, compress);
@@ -382,10 +406,30 @@ export default {
     return { backupDir, model: modeloServidor(fresh, (await nomes())[fresh.steamid]) };
   },
   gameRunning: () => invoke('game_running'),
+  // fog of war of a local save: { grid (1280x1280 copy, edits included), original (as saved) } or null
+  async readFog(path) {
+    const s = sessions.get(path);
+    if (!s || ehServidor(path)) return null;
+    const p = await fogPayload(s);
+    if (!p) return null;
+    const original = p.slice(FOG_HEADER);
+    return { grid: s.fogEdit ? s.fogEdit.slice(FOG_HEADER) : original.slice(), original };
+  },
+  // keeps the edited grid in the session until the save is written; null discards the edit
+  setFog(path, grid) {
+    const s = sessions.get(path);
+    if (!s || !s.fogOriginal) return;
+    if (!grid) { s.fogEdit = null; return; }
+    const full = s.fogOriginal.slice();
+    full.set(grid, FOG_HEADER);
+    s.fogEdit = full;
+  },
   // cópias do servidor não têm backup automático do jogo; o editor guarda o anterior ao gravar
   listBackups: (target) => (ehServidor(target) ? Promise.resolve([]) : invoke('list_backups', { target })),
   restoreBackup: (src, target) => (ehServidor(target)
     ? Promise.reject(new Error(t('Para desfazer no servidor, grave de novo a cópia guardada em Documentos\\Enshrouded-Backups\\servidor')))
     : invoke('restore_backup', { src, target }).then(() => { sessions.delete(target); return true; })),
   openBackups: () => invoke('open_backups'),
+  // opens the editor's releases page in the default browser (fixed URL, decided in Rust)
+  openReleases: () => invoke('open_releases'),
 };

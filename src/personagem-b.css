@@ -1,0 +1,135 @@
+/* Character screen (fluid, real css px). Type sizes and colours come only from tipografia.css tokens.
+   Layout reflows on the container width, not the window:
+   - narrow (< 760 px): everything stacks
+   - medium (760-1279 px): the hero is a band across the top; equipment and the item panel side by side below
+   - wide (>= 1280 px): equipment | hero | item panel */
+
+.pb { container-type: inline-size; --slot: clamp(60px, 3.2vw + 20px, 84px); padding-bottom: var(--sp-7); }
+/* three columns need more room than a text page: this screen alone goes wider than --content-max */
+.b-fluida > .pb { max-width: 1880px; }
+.pb-grade { display: grid; gap: var(--sp-6); grid-template-columns: minmax(0, 1fr); grid-template-areas: "heroi" "equip" "detalhe"; align-items: start; }
+@container (min-width: 760px) {
+  .pb-grade { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "heroi heroi" "equip detalhe"; }
+}
+@container (min-width: 1280px) {
+  .pb-grade { grid-template-columns: auto minmax(300px, .9fr) minmax(440px, 1.4fr); grid-template-areas: "equip heroi detalhe"; }
+}
+
+/* shared card look (same as the server screen) */
+.pb-equip, .pb-heroi { background: var(--s-card); border: 1px solid var(--s-line); border-radius: var(--radius); padding: var(--sp-5); }
+
+/* ---- hero: medallion, name, level/xp, attributes ---- */
+.pb-heroi { grid-area: heroi; display: flex; flex-direction: column; align-items: center; gap: var(--sp-5); container-type: inline-size; }
+@container (min-width: 760px) and (max-width: 1279px) {
+  /* band layout: medallion on the left, data on the right */
+  .pb-heroi { flex-direction: row; align-items: center; gap: var(--sp-6); padding: var(--sp-5) var(--sp-6); }
+}
+.pb-medalhao { position: relative; flex: none; width: clamp(170px, 12vw + 40px, 280px); aspect-ratio: 1; }
+.pb-ornamento { position: absolute; inset: -12%; width: 124%; height: 124%; opacity: .5; pointer-events: none; }
+.pb-medalha { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pb-badge { position: absolute; left: 50%; top: 57.5%; width: 21%; aspect-ratio: 1; transform: translate(-50%, -50%); display: grid; place-items: center; }
+.pb-badge img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pb-badge b { position: relative; margin-top: -10%; font: 700 var(--fs-h1)/1 var(--f-display); color: #1B1630; }
+.pb-heroi-dados { display: flex; flex-direction: column; gap: var(--sp-4); width: 100%; min-width: 0; }
+.pb-nome { margin: 0; text-align: center; overflow-wrap: anywhere; }
+@container (min-width: 760px) and (max-width: 1279px) { .pb-nome { text-align: left; } }
+.pb-campos { display: flex; flex-wrap: wrap; gap: var(--sp-4) var(--sp-5); }
+.pb-campo { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.pb-attrs { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: var(--sp-2); }
+.pb-attrs > div { padding: var(--sp-2) var(--sp-3); border-radius: 8px; background: rgba(255, 255, 255, .03); border: 1px solid var(--s-line); }
+.pb-attrs dd { margin: var(--sp-1) 0 0; }
+.pb-nota { margin: 0; }
+.pb-nota.aviso { color: var(--c-warn); }
+
+/* steppers from components.jsx, resized to real px */
+.pb .stepper { display: flex; flex-wrap: nowrap; gap: var(--sp-1); }
+.pb .stepper .step { min-width: 40px; height: 40px; padding: 0 var(--sp-2); border: 1px solid var(--s-line-strong); border-radius: 6px; background: rgba(0, 0, 0, .25); color: var(--c-text-1); font: 700 var(--fs-small)/1 var(--f-text); }
+.pb .stepper .step:hover { border-color: var(--c-gold); background: rgba(217, 185, 95, .1); }
+.pb .stepper .step-val { width: 7ch; min-width: 72px; height: 40px; border: 1px solid var(--s-line-strong); border-radius: 6px; background: rgba(0, 0, 0, .35); color: var(--c-text-1); font: 700 var(--fs-body)/1 var(--f-text); text-align: center; }
+.pb .stepper .step-val:focus { border-color: var(--c-gold); }
+
+/* ---- equipment ---- */
+.pb-equip { grid-area: equip; display: flex; flex-direction: column; gap: var(--sp-3); }
+.pb-equip h2, .pb-equip h3 { margin: 0; }
+.pb-sub { margin-top: var(--sp-3) !important; }
+/* armour/vanity table: part name | armour slot | vanity slot; fixed slot columns so nothing overlaps */
+.pb-tabela { display: flex; flex-direction: column; gap: var(--sp-2); }
+.pb-linha { display: grid; grid-template-columns: minmax(96px, 1fr) var(--slot) var(--slot); align-items: center; gap: var(--sp-3); }
+.pb-cab > span { text-align: center; }
+.pb-parte { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pb-parte-nome { color: var(--c-text-1); line-height: 1.2; }
+.pb-parte-item { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* accessories: three fixed cells per row, label under the slot, wraps to two lines inside its own cell */
+.pb-acess { display: grid; grid-template-columns: repeat(3, calc(var(--slot) + 22px)); gap: var(--sp-3) var(--sp-3); }
+.pb-cel { display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); text-align: center; }
+.pb-cel .t-label { max-width: 100%; overflow-wrap: anywhere; }
+
+/* one slot: the game's slot texture, rarity tint and icon (SlotView) in a fixed square */
+.pb-slot { position: relative; display: block; width: var(--slot); height: var(--slot); padding: 0; border-radius: 4px; }
+.pb-slot:focus-visible { outline: 3px solid var(--c-gold); outline-offset: 3px; }
+.pb .slotv .slot-bg, .pb .slotv .slot-rarity { width: 100%; height: 100%; } /* stage css relies on the textures' natural 118 px size */
+.pb .slotv .slot-empty { inset: 26%; width: 48%; height: 48%; }
+.pb .slotv .slot-count { right: 6%; bottom: 2%; font: 700 var(--fs-small)/1 var(--f-display); }
+.pb .slotv .slot-level { right: 6%; top: 4%; font: 700 var(--fs-label)/1 var(--f-display); }
+.pb .slotv .slot-dur { left: 10%; right: 10%; bottom: 5%; height: 4px; }
+.pb .slotv .slot-outline { inset: -5px; width: calc(100% + 10px); height: calc(100% + 10px); }
+
+/* ---- item panel: the vector frame placed in the flow, sized by its content ---- */
+.pb-detalhe { grid-area: detalhe; min-width: 0; }
+.pb-detalhe .moldura { position: relative; left: auto; top: auto; width: 100%; height: auto; min-height: 560px; }
+.pb-detalhe .moldura-corpo { position: relative; inset: auto; }
+.pb-detalhe .detail-body { position: relative; inset: auto; overflow: visible; display: flex; flex-direction: column; gap: var(--sp-4); padding: clamp(40px, 2.2vw + 16px, 64px); min-height: 560px; }
+.pb-onde { color: var(--c-text-2); }
+.pb-aviso { padding: var(--sp-3) var(--sp-4); border-radius: 8px; background: rgba(240, 134, 118, .12); border: 1px solid rgba(240, 134, 118, .4); color: var(--c-text-1); }
+.pb-vazio { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-4); text-align: center; padding: var(--sp-6) 0; }
+.pb-vazio img { width: 96px; height: 96px; opacity: .4; }
+.pb-vazio p { margin: 0; max-width: 36ch; }
+
+/* ItemEditor content (stage-px rules in styles.css), rescaled to the token scale inside this panel */
+.pb .ed-head { gap: var(--sp-4); }
+.pb .ed-icon { width: clamp(84px, 4vw + 40px, 128px); height: clamp(84px, 4vw + 40px, 128px); }
+.pb .ed-icon img { width: 88%; height: 88%; }
+.pb .detail-title { font: 700 var(--fs-h1)/var(--lh-tight) var(--f-display); }
+.pb .detail-sub { font: 400 var(--fs-small)/1.4 var(--f-text); color: var(--c-text-3); }
+.pb .stripe { height: 4px; width: 100%; }
+.pb .ed-rows { gap: var(--sp-3); margin-top: var(--sp-2); }
+.pb .ed-row { grid-template-columns: minmax(96px, 9em) 1fr; gap: var(--sp-3); align-items: start; }
+.pb .ed-row .ed-label { padding-top: 12px; }
+.pb .ed-label { font: 700 var(--fs-label)/1.2 var(--f-display); letter-spacing: var(--track-label); color: var(--c-text-3); }
+.pb .ed-ctrl { gap: var(--sp-2); }
+.pb .gems { gap: var(--sp-1); } .pb .gem { width: 34px; height: 34px; padding: 4px; }
+.pb .gem-label, .pb .pip-label { font: 700 var(--fs-small)/1 var(--f-display); margin-left: var(--sp-2); }
+.pb .pips { gap: var(--sp-3); } .pb .pip { width: 16px; height: 16px; border-width: 2px; }
+.pb .meter { width: min(220px, 100%); height: 28px; } .pb .meter-text { font: 700 var(--fs-small)/1 var(--f-text); }
+.pb .ed-select { min-width: 0; max-width: 100%; font: 400 var(--fs-small)/1.3 var(--f-text); padding: var(--sp-1) var(--sp-2); }
+.pb .ed-stats { margin-top: var(--sp-2); gap: var(--sp-1); overflow: visible; }
+.pb .st-linha { grid-template-columns: 4.5em 1fr; gap: var(--sp-3); font: 400 var(--fs-small)/1.4 var(--f-text); }
+.pb .st-melhoria { grid-template-columns: 7em 3.5em 1fr; gap: var(--sp-2); }
+.viewport .pb .st-nivel, .viewport .pb .st-ganho { font: 700 var(--fs-label)/1.3 var(--f-display) !important; letter-spacing: .06em; }
+.pb .ed-actions { margin-top: auto; gap: var(--sp-3); }
+.pb .gsep { height: 10px; margin: var(--sp-1) 0; }
+/* the game's button textures stay; only their size follows the page */
+.pb .gbtn { height: 44px; font: 700 var(--fs-small)/1 var(--f-display); letter-spacing: .08em; }
+.pb .gbtn.small { height: 36px; font-size: var(--fs-label); }
+.pb .gbtn-l, .pb .gbtn-r { width: 26px; } .pb .gbtn.small .gbtn-l, .pb .gbtn.small .gbtn-r { width: 20px; }
+/* piso.css sets stage-px sizes with !important; inside this page the tokens win */
+.viewport .pb .hint { font: 400 var(--fs-small)/1.45 var(--f-text) !important; color: var(--c-text-3); }
+.viewport .pb .hint.warn { color: var(--c-warn); }
+.viewport .pb .debug { font: 400 var(--fs-label)/1.4 var(--f-mono) !important; color: var(--c-text-3) !important; }
+.viewport .pb .caps.small { font: 700 var(--fs-label)/1.2 var(--f-display); letter-spacing: var(--track-label); color: var(--c-text-3); }
+
+/* The item panel never gets taller than the work area: long stat lists scroll inside the panel and the
+   actions (Remove…) stay pinned to its bottom, always visible. 94 px = toolbar 60 + status bar 34. */
+.pb-detalhe .moldura { max-height: calc(100vh - 94px - 2 * var(--gutter)); }
+.pb-detalhe .moldura { display: flex; flex-direction: column; }
+.pb-detalhe .moldura-corpo { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.pb-detalhe .detail-body { flex: 1 1 auto; min-height: 0 !important; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(217, 185, 95, .45) transparent; }
+/* keep everything inside the gold frame: the frame is drawn 28 px in from the box (MolduraSVG), so the content
+   box is inset by the same amount plus the inner line */
+.pb-detalhe .moldura { padding: 42px; }
+.pb-detalhe .detail-body { padding: clamp(10px, 1vw, 22px) clamp(12px, 1.2vw, 26px) 0; }
+/* the body is a flex column: without this its blocks shrink and overlap instead of scrolling */
+.pb-detalhe .detail-body > * { flex-shrink: 0; }
+/* actions pinned to the bottom of the scroll area */
+.pb .ed-actions { position: sticky; bottom: 0; padding: var(--sp-5) 0 clamp(10px, 1vw, 20px); z-index: 1; }
+

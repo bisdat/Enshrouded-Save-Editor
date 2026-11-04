@@ -261,7 +261,37 @@ pub async fn servidor_recusado_ler(steamid: String, nome: String) -> Result<taur
 pub async fn servidor_modo() -> Result<String, String> {
     let c = carregar();
     let txt = sftp::baixar(&c, "/guardiao.json").await.map(|b| String::from_utf8_lossy(&b).to_string())?;
-    Ok(if txt.replace(' ', "").contains("\"modo\":\"observar\"") { "observar".into() } else { "aplicar".into() })
+    // since guardian 1.1.0 both {"modo": "observar"} and {"mode": "observe"} are accepted, in any mix
+    let compacto: String = txt.chars().filter(|ch| !ch.is_whitespace()).collect::<String>().to_lowercase();
+    let observa = ["\"modo\":", "\"mode\":"].iter().any(|k| ["\"observar\"", "\"observe\""].iter().any(|v| compacto.contains(&format!("{k}{v}"))));
+    Ok(if observa { "observar".into() } else { "aplicar".into() })
+}
+
+/// The guardian's own log (guardiao.log): the messages it prints to the server console, which some hosts'
+/// panels don't show (BisectHosting shows only the game's log file). Only the last 256 KB are returned,
+/// starting at a line boundary: the file grows for as long as the server keeps it.
+#[tauri::command]
+pub async fn servidor_log_guardiao() -> Result<String, String> {
+    let c = carregar();
+    let b = sftp::baixar(&c, &format!("/{}/guardiao.log", c.pasta)).await?;
+    let ini = b.len().saturating_sub(256 * 1024);
+    let mut s = String::from_utf8_lossy(&b[ini..]).to_string();
+    if ini > 0 {
+        if let Some(i) = s.find('\n') {
+            s = s[i + 1..].to_string();
+        }
+    }
+    Ok(s)
+}
+
+/// The guardian's heartbeat (ativo.json, written every minute while it runs, since 1.1.0): version and the
+/// last time it was seen, as raw JSON. Missing file = an older guardian or one that never ran.
+#[tauri::command]
+pub async fn servidor_ativo() -> Result<String, String> {
+    let c = carregar();
+    sftp::baixar(&c, &format!("/{}/ativo.json", c.pasta))
+        .await
+        .map(|b| String::from_utf8_lossy(&b).to_string())
 }
 
 /// Últimas linhas do registro do guardião, para mostrar o que ele decidiu em cada entrada.

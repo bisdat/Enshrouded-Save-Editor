@@ -11,16 +11,19 @@ export { items, skills };
 // Exportado porque quem já tem o objeto em mãos (uma lista de catálogo, o nó sob o cursor) não
 // deve voltar à tabela pelo id só para ler o nome — e nunca deve ler `.pt` direto: foi assim que
 // a árvore de habilidades e o catálogo continuaram em português com a interface em inglês.
+// Official names in es/de/zh come from tools/nomes-oficiais.mjs. Missing field: English, then Portuguese
+// (Portuguese UI: Portuguese, then English).
 export const nomeDe = (o, reserva) => {
   if (!o) return reserva;
   const campo = campoDeNome();
-  return o[campo] || o[campo === 'pt' ? 'en' : 'pt'] || reserva;
+  return o[campo] || (campo === 'pt' ? o.en : o.en || o.pt) || reserva;
 };
 
 export const itemName = (id) => nomeDe(items[id], items[id]?.debug || `#${id}`);
 
-// A descrição do nó é guardada em `desc` e `descEn`, e não em `pt`/`en` como o nome.
-export const descricaoDe = (no) => (campoDeNome() === 'pt' ? no?.desc : no?.descEn) || no?.desc || '';
+// A node's description lives in `desc` (pt), `descEn`, `descEs`, `descDe`, `descZh`, not in the name fields.
+const CAMPO_DESC = { pt: 'desc', en: 'descEn', es: 'descEs', de: 'descDe', zh: 'descZh' };
+export const descricaoDe = (no) => no?.[CAMPO_DESC[campoDeNome()]] || no?.descEn || no?.desc || '';
 export const skillName = (id) => nomeDe(skills.nodes[id], `#${id}`);
 
 // O conhecimento quase sempre é um item ou a receita de um item, e aí o nome sai do `items.json`

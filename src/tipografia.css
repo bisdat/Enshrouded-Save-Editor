@@ -1,0 +1,66 @@
+/* Type and spacing system for the fluid screens (real css px, outside the scaled stage).
+
+   Two families, one job each:
+   - Harmonique (the game's display serif): titles, labels, buttons. Never for running text.
+   - NotoSerifGame (the game's text serif): everything you read — body, values, metadata.
+   Numbers use lining, tabular figures so columns of dates and levels line up.
+
+   Every size is fluid between a floor and a ceiling: clamp(min, preferred, max). The preferred value grows with
+   the window width, so text is never smaller than the floor on a 1280 px window nor oversized on a 4K one. */
+
+:root {
+  --f-display: 'Harmonique', 'NotoSerifGame', Georgia, serif;
+  --f-text: 'NotoSerifGame', Georgia, serif;
+  --f-mono: 'Cascadia Mono', 'Consolas', monospace;
+
+  /* type scale (ratio ~1.25 around the body size) */
+  --fs-display: clamp(26px, 1.1vw + 12px, 40px);  /* screen title, one per screen */
+  --fs-h1: clamp(21px, 0.75vw + 11px, 30px);      /* panel title, item name */
+  --fs-h2: clamp(17px, 0.45vw + 10px, 22px);      /* card title, player name */
+  --fs-body: clamp(15px, 0.25vw + 10px, 18px);    /* running text, values */
+  --fs-small: clamp(13px, 0.15vw + 10px, 15px);   /* metadata, secondary text — the reading floor */
+  --fs-label: clamp(11px, 0.12vw + 9px, 13px);    /* overlines, column heads, chips — always caps */
+  --lh-tight: 1.15;
+  --lh-text: 1.5;
+  --track-label: 0.14em;
+
+  /* spacing scale; the page gutter never goes below 20 px */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+  --gutter: clamp(20px, 2.5vw, 56px);
+  --content-max: 1440px;
+
+  /* text colors, contrast checked against the panel blue #161C4E and the app background #12131C (WCAG) */
+  --c-text-1: #F1E7CF;  /* primary, 13.9:1 */
+  --c-text-2: #C9CDD6;  /* secondary, 10.6:1 */
+  --c-text-3: #9AA1B2;  /* tertiary, labels, 6.6:1 */
+  --c-gold: #D9B95F;    /* local save accent, 8.9:1 */
+  --c-azure: #8EC3F2;   /* server copy accent, 9.2:1 */
+  --c-ok: #8ED39B;
+  --c-warn: #EBBE5F;
+  --c-err: #F08676;
+
+  /* surfaces */
+  --s-card: #1A1D2B;
+  --s-card-hover: #20243A;
+  --s-line: #2E3247;
+  --s-line-strong: #4A5070;
+  --radius: 10px;
+}
+
+/* role classes */
+.t-display { font: 700 var(--fs-display)/var(--lh-tight) var(--f-display); color: var(--c-text-1); letter-spacing: .01em; }
+.t-h1 { font: 700 var(--fs-h1)/var(--lh-tight) var(--f-display); color: var(--c-text-1); }
+.t-h2 { font: 700 var(--fs-h2)/var(--lh-tight) var(--f-display); color: var(--c-text-1); }
+.t-body { font: 400 var(--fs-body)/var(--lh-text) var(--f-text); color: var(--c-text-2); }
+.t-small { font: 400 var(--fs-small)/1.45 var(--f-text); color: var(--c-text-3); }
+.t-label { font: 700 var(--fs-label)/1.2 var(--f-display); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--c-text-3); }
+.t-mono { font: 400 var(--fs-small)/1.4 var(--f-mono); color: var(--c-text-3); user-select: text; }
+.t-num { font-variant-numeric: lining-nums tabular-nums; }
+
+/* fluid screen container: lives in the work area instead of the stage */
+.b-fluida { position: absolute; inset: 0; overflow: auto; padding: var(--gutter); font: 400 var(--fs-body)/var(--lh-text) var(--f-text); color: var(--c-text-2); font-variant-numeric: lining-nums tabular-nums; }
+.b-fluida > * { max-width: var(--content-max); margin-inline: auto; }
+/* the stage stays mounted under a fluid screen only for its dialogs */
+.b-area.fluida .stage { pointer-events: none; }
+.b-area.fluida .stage .world-bg { display: none; }
+.b-area.fluida .stage .modal { pointer-events: auto; }

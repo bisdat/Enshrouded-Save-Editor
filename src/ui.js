@@ -25,7 +25,7 @@ export function rgba(c, alphaMul = 1) {
 // raridade da instância gravada no save (1..5); 0 = sem raridade
 export const RARITY_KEYS = ['undefined', 'common', 'uncommon', 'rare', 'epic', 'legendary'];
 // chaves de tradução: quem mostra passa por t()
-export const RARITY_PT = ['Sem raridade', 'Comum', 'Incomum', 'Raro', 'Épico', 'Lendário'];
+export const RARITY_PT = ['Sem raridade', 'Comum', 'Incomum', 'Raro', 'Épico', 'Legendário'];
 const BASE_RARITY = { Common: 1, Uncommon: 2, Rare: 3, Epic: 4, Legendary: 5 };
 
 export function rarityOf(entry) {

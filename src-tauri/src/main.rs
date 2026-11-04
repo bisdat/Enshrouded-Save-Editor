@@ -190,6 +190,19 @@ fn open_backups() {
     let _ = Command::new("explorer").arg(r).spawn();
 }
 
+// Opens the editor's releases page in the default browser (the update card's "see what's new"). The URL is
+// fixed: nothing from the page or the network decides what gets opened.
+#[tauri::command]
+fn open_releases() {
+    #[link(name = "shell32")]
+    extern "system" {
+        fn ShellExecuteW(hwnd: isize, op: *const u16, file: *const u16, params: *const u16, dir: *const u16, show: i32) -> isize;
+    }
+    let w = |s: &str| s.encode_utf16().chain([0]).collect::<Vec<u16>>();
+    let url = "https://github.com/nicolasferreiraxn/Enshrouded-Save-Editor/releases/latest";
+    unsafe { ShellExecuteW(0, w("open").as_ptr(), w(url).as_ptr(), std::ptr::null(), std::ptr::null(), 1) };
+}
+
 fn mime(path: &str) -> &'static str {
     match path.rsplit('.').next().unwrap_or("") {
         "webp" => "image/webp", "png" => "image/png", "otf" => "font/otf", "ttf" => "font/ttf", _ => "application/octet-stream",
@@ -210,10 +223,10 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             list_saves, file_info, read_file, zstd_decompress, zstd_compress, game_running,
-            backup_file, write_save, list_backups, restore_backup, open_backups,
+            backup_file, write_save, list_backups, restore_backup, open_backups, open_releases,
             servidor::servidor_config, servidor::servidor_config_set, servidor::servidor_jogadores,
             servidor::servidor_ler, servidor::servidor_gravar, servidor::servidor_modo,
-            servidor::servidor_registro, servidor::servidor_nomes,
+            servidor::servidor_registro, servidor::servidor_nomes, servidor::servidor_log_guardiao, servidor::servidor_ativo,
             servidor::servidor_recusados, servidor::servidor_recusado_ler, servidor::servidor_hostkey
         ])
         .run(tauri::generate_context!())

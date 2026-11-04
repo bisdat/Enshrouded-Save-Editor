@@ -36,9 +36,10 @@
 | 💎 **Any item in detail** | level, amount, durability, upgrades, rarity and **the gem socketed in a weapon** (swap, remove, change its level) |
 | ⚔️ **What the item does** | the attribute lines and the per-upgrade enhancements, read from the game's own resources and shown as the game shows them |
 | 📜 **Knowledge** | discoveries and recipes, with search by name or id and a level filter |
+| 🗺️ **Fog of war** | paint what the character has explored over the world map: reveal or hide with a brush, or the whole map at once, with undo — local saves only (see below) |
 | 🏰 **Dedicated server** | with [Enshrouded Server Guardian](https://github.com/nicolasferreiraxn/Enshrouded-Server-Guardian), the server's character copies show up in the same list — edit, kick the player, and they come back with your version |
 | 💾 **Always a backup** | a backup before every save, restorable from inside the app |
-| 🌍 **Portuguese and English** | switch on the bottom bar; adding a language is one JSON file |
+| 🌍 **Five languages** | Portuguese, English, Spanish, German and Simplified Chinese, with the game's official item and skill names; adding a language is one JSON file |
 
 Every new item is created with the extra fields that item type really stores, measured on real saves — that's why
 what you create in the editor works in the game.
@@ -60,6 +61,11 @@ what you create in the editor works in the game.
 1. Edit a player's copy and save.
 2. Kick the player (or ask them to relog).
 3. On the next join the guardian enforces the stored copy — they come back with your version.
+
+> **The fog of war can't be edited through the server.** This is a limitation of the game, not of the editor: the
+> fog lives only in each player's own save, on their computer. The game never sends it to the server and the server
+> never stores it (we checked what a player sends on join and every block of the world save), so there is nothing on
+> the server to read or change. Each player edits their own fog by opening their local save, with the game closed.
 
 The editor also reads the guardian's `rejected/` folder (`recusados/`) and explains, in plain words, what a rejected
 save carried: level and xp difference, extra or missing items, items that only moved between containers, and
@@ -104,24 +110,27 @@ silently accepted.
 
 ## 🌍 Translating
 
-The interface ships in Portuguese and English. Adding a language is one file, and the translation key **is the
-Portuguese text itself** — so anything left untranslated shows in Portuguese, and nothing breaks.
+The interface ships in Portuguese, English, Spanish, German and Simplified Chinese. Adding a language is one file,
+and the translation key **is the Portuguese text itself** — anything left untranslated shows in English (then in
+Portuguese), and nothing breaks.
 
-1. Copy `src/i18n/en.json` to `src/i18n/<code>.json` (`es.json`, `de.json`…).
+1. Copy `src/i18n/en.json` to `src/i18n/<code>.json` (`fr.json`, `it.json`…).
 2. Translate the **values**, leave the keys alone, and keep the `{placeholders}` (they can move within the sentence).
 3. Register it in `IDIOMAS`, at the top of [`src/i18n.js`](src/i18n.js):
 
 ```js
-import es from './i18n/es.json';
+import fr from './i18n/fr.json';
 
 export const IDIOMAS = [
-  { codigo: 'pt-BR', nome: 'Português', locale: 'pt-BR', dicionario: null },
-  { codigo: 'en', nome: 'English', locale: 'en-US', dicionario: en },
-  { codigo: 'es', nome: 'Español', locale: 'es-ES', dicionario: es },
+  // …the languages already there…
+  { codigo: 'fr', nome: 'Français', locale: 'fr-FR', dicionario: fr },
 ];
 ```
 
-Item and skill names come from the game's own localization (`data/items.json`, in Portuguese and English).
+Item and skill names come from the game's own localization: `data/items.json` and `data/skills.json` carry them in
+Portuguese, English, Spanish, German and Simplified Chinese, taken from the game's official text and refreshed by the
+maintainer after game updates. A new language also needs its field in `campoDeNome()` (`src/i18n.js`); without it,
+names show in English.
 
 ## 🛠️ Building
 
@@ -181,8 +190,7 @@ ids or names, the data goes stale until someone regenerates it.
 
 ## ❤️ Credits
 
-- **[kfc-parser / Enshrouded Mod Loader](https://github.com/Brabb3l/kfc-parser)** by brabb3l — used to read the
-  game's resources.
+- **[kfc-parser / Enshrouded Mod Loader](https://github.com/Brabb3l/kfc-parser)** by brabb3l — used to read the game's resources.
 - **Keen Games** — for Enshrouded.
 
 ---

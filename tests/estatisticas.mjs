@@ -1,16 +1,9 @@
-// As linhas de atributo e as melhorias têm de sair iguais às do jogo.
-//
-// A referência é a captura de tela que acompanha a issue #2: o Gemini Ring, lendário, com as
-// cinco melhorias aplicadas. O que o jogo mostra ali está transcrito abaixo, linha por linha, nos
-// dois idiomas. Se o formato do arquivo de dados ou a montagem mudarem, isto reprova.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-// carrega o itemstats.js com o idioma fixado, do mesmo jeito que os outros testes fazem com o
-// gamedata.js: o módulo real depende de localStorage e navigator, que não existem aqui
 async function carregar(campo) {
   const fonte = fs.readFileSync(path.join(RAIZ, 'src', 'itemstats.js'), 'utf8')
     .replace(/^import\s+\{[^}]*\}\s+from\s+'\.\/i18n\.js';$/gm,
@@ -27,7 +20,7 @@ const localeAtual = () => '${campo === 'pt' ? 'pt-BR' : 'en-US'}';`)
   }
 }
 
-const ANEL = 1234854024; // Gemini Ring / Anel de Gêmeos — o item da captura da issue #2
+const ANEL = 1234854024;
 
 const ESPERADO = {
   en: {
@@ -80,7 +73,6 @@ for (const campo of ['pt', 'en']) {
       `${campo}: atributo ${i} = ${veio.valor} ${veio.nome}`);
   });
 
-  // as cinco melhorias, com o item em 5/5 upgrades como na captura
   const melhorias = m.melhoriasDe(ANEL, 4, 5);
   conferir(melhorias.length === esperado.melhorias.length,
     `${campo}: ${melhorias.length} melhorias`);
@@ -92,19 +84,12 @@ for (const campo of ['pt', 'en']) {
   });
 }
 
-// com menos upgrades, só as melhorias até ali contam como aplicadas
 const m = await carregar('en');
 const parciais = m.melhoriasDe(ANEL, 2, 2);
 conferir(parciais.filter((x) => x.aplicada).length === 2,
   `com 2 melhorias aplicadas, ${parciais.filter((x) => x.aplicada).length} marcadas`);
 
-// ------------------------------------------- armadura e melhorias, contra a captura do jogo
-//
-// Referência: captura das Botas de Andarilho do Vento das Cinzas equipadas, nível 255/255, com as
-// cinco melhorias aplicadas. O que o jogo mostra ali está transcrito aqui. Esta é a medição que
-// transformou a fórmula da armadura de hipótese em fato: 23 + 15×255 = 3848, × 0,06 das botas =
-// 230,88, e o jogo escreve 231 — e não 51, que é o que daria se houvesse corte no nível 55.
-const BOTAS = 749923180; // Armor_T7_Ranger_Archer_DPS_Boots
+const BOTAS = 749923180;
 
 {
   const mod = await carregar('pt');
@@ -114,7 +99,6 @@ const BOTAS = 749923180; // Armor_T7_Ranger_Archer_DPS_Boots
   conferir(mod.armaduraDe(BOTAS, 45)?.fisica === 42,
     `botas no nível nominal 45: ${mod.armaduraDe(BOTAS, 45)?.fisica}`);
 
-  // as quatro linhas de atributo, na ordem e no formato da captura
   const esperado = [
     ['+21', 'Regeneração de Vigor'],
     ['-0,5s', 'Atraso na regeneração da resistência'],
@@ -129,8 +113,6 @@ const BOTAS = 749923180; // Armor_T7_Ranger_Archer_DPS_Boots
       `botas: ${linhas[i]?.valor} ${linhas[i]?.nome}`);
   });
 
-  // as cinco melhorias: rótulo com o NÍVEL do item naquele passo, a coluna de armadura, e as
-  // melhorias de armadura calculadas no nível da própria linha
   const esperadasM = [
     [251, '+114', 'Armadura Contra Corte'],
     [252, '+114', 'Armadura Contra Perfuração'],
@@ -148,13 +130,8 @@ const BOTAS = 749923180; // Armor_T7_Ranger_Archer_DPS_Boots
   });
 }
 
-// --------------------------------------------------- duração e nível nominal
-//
-// O formato de duração vem em MILISSEGUNDOS: num print do Machado Folheado a Ouro a velocidade de
-// ataque apareceu como "774s". E a linha "Nível do Item" vinha com o nível nominal do arquivo
-// (+40 num machado de nível 11), por isso ela não vai mais para a lista.
-const MACHADO = 246967425;  // Tool_T6_Axe_Steel_Gold_Wetlands
-const ANEL_VIGOR = 4079983357; // Ring_T6_Ring_of_Stamina
+const MACHADO = 246967425;
+const ANEL_VIGOR = 4079983357;
 
 for (const [campo, velocidade, decimal] of [
   ['pt', '0,8s', 'vírgula'],
@@ -170,41 +147,29 @@ for (const [campo, velocidade, decimal] of [
   const anel = mod.atributosDe(ANEL_VIGOR, 255);
   const seco = anel.find((l) => /Molhado|Wet/.test(l.nome));
   conferir(seco?.valor === '1:00 m', `${campo}: 60000 ms viram ${seco?.valor}`);
-  // e o que NÃO escala continua sem escalar, mesmo com o item em 255: os valores do jogo são
-  // autorais por tier (a família vai de +4 no nível 5 a +10 no 45), não calculados do nível
   const vigor = anel.find((l) => /^Vigor$|^Stamina$/.test(l.nome));
   conferir(vigor?.valor === '+9', `${campo}: anel em 255 continua ${vigor?.valor} Vigor, como no jogo`);
 }
 
-// ------------------------------------------- quantas melhorias o item mostra é a raridade
-//
-// O vetor do jogo tem sempre cinco posições, mas a raridade diz quantas o item aceita (nível
-// máximo = nível base + raridade). Mostrar as cinco em todo item fazia um Comum anunciar
-// melhorias de Lendário, que nunca iam acontecer. Quem corta usa `pos`, a posição no vetor
-// original — a lista devolvida descarta as posições vazias, então o índice dela não serve.
 {
   const mod = await carregar('pt');
-  const CALCAS = 9501187; // Armor_T7_Ranger_Archer_DPS_Legs
+  const CALCAS = 9501187;
   const porRaridade = (r, upgrades = 0) => mod.melhoriasDe(CALCAS, 56 + upgrades, upgrades).filter((x) => x.pos < r);
 
   for (const [raridade, quantas] of [[1, 1], [3, 3], [5, 5]]) {
     conferir(porRaridade(raridade).length === quantas,
       `raridade ${raridade}: ${porRaridade(raridade).length} melhorias`);
   }
-  // as posições têm de ser as do vetor original, em ordem e sem buraco neste item
   conferir(porRaridade(5).every((x, i) => x.pos === i), 'as posições seguem o vetor do jogo');
 
-  // com 3 aplicadas, as três primeiras vêm marcadas e as demais não
   const r3 = porRaridade(5, 3);
   conferir(r3.filter((x) => x.aplicada).length === 3 && r3.slice(0, 3).every((x) => x.aplicada),
     `com 3 melhorias, ${r3.filter((x) => x.aplicada).length} marcadas e as três primeiras`);
 }
 
-// item sem nada a mostrar não inventa seção
 conferir(m.temEstatisticas(999999999) === false, 'id desconhecido não tem estatísticas');
 conferir(m.atributosDe(999999999, 1).length === 0, 'id desconhecido não produz linhas');
 
-// nenhuma linha pode sair com número inventado: valor null é o que marca "depende do nível"
 const escaladas = Object.entries(JSON.parse(fs.readFileSync(path.join(RAIZ, 'data', 'item-stats.json'), 'utf8')).itens)
   .filter(([, v]) => (v.a || []).some((l) => l.e));
 conferir(escaladas.every(([id]) => m.atributosDe(Number(id), 40).some((l) => l.valor === null || !l.variaComNivel)),

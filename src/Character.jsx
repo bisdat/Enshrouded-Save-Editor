@@ -26,7 +26,7 @@ export const EQUIP_SLOTS = [
   { tex: 'equipmentslot_ring', name: 'Anel', x: 1110, y: 150 },
   { tex: 'equipmentslot_ring', name: 'Anel', x: 1110, y: 300 },
   { tex: 'equipmentslot_shield', name: 'Protetor', x: 1110, y: 450 },
-  { tex: 'equipmentslot_hookshot', name: 'Gancho', x: 1110, y: 600 },
+  { tex: 'equipmentslot_hookshot', name: 'Arpéu', x: 1110, y: 600 },
   { tex: 'equipmentslot_glider', name: 'Planador', x: 1110, y: 750 },
   { tex: 'equipmentslot_backpack', name: 'Mochila', x: 1110, y: 900 },
 ];
